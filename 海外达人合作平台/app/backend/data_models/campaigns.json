@@ -1,0 +1,103 @@
+{
+    "title": "campaigns",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "user_id": {
+            "type": "string",
+            "description": "Merchant user ID"
+        },
+        "title": {
+            "type": "string",
+            "description": "Campaign title"
+        },
+        "description": {
+            "type": "string",
+            "description": "Campaign description"
+        },
+        "country": {
+            "type": "string",
+            "description": "Target country codes, comma-separated"
+        },
+        "platform": {
+            "type": "string",
+            "description": "tiktok/instagram/youtube, comma-separated"
+        },
+        "category": {
+            "type": "string",
+            "description": "Product category"
+        },
+        "collab_type": {
+            "type": "string",
+            "description": "ugc_only/post_to_tiktok/hybrid"
+        },
+        "total_budget": {
+            "type": "number",
+            "description": "Total budget in CNY"
+        },
+        "per_creator_min": {
+            "type": "number",
+            "description": "Min per creator budget"
+        },
+        "per_creator_max": {
+            "type": "number",
+            "description": "Max per creator budget"
+        },
+        "conditions": {
+            "type": "string",
+            "description": "JSON array of conditions (max 5)"
+        },
+        "threshold": {
+            "type": "integer",
+            "description": "Conditions threshold like 2 or 3 out of 5"
+        },
+        "milestones": {
+            "type": "string",
+            "description": "JSON array of milestones with percentages"
+        },
+        "deadline_apply": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Application deadline"
+        },
+        "deadline_publish": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Publish deadline"
+        },
+        "retention_days": {
+            "type": "integer",
+            "description": "Content retention days"
+        },
+        "keywords": {
+            "type": "string",
+            "description": "Forbidden words, comma-separated"
+        },
+        "compliance_notes": {
+            "type": "string",
+            "description": "Compliance notes"
+        },
+        "status": {
+            "type": "string",
+            "description": "draft/active/paused/completed/cancelled"
+        },
+        "applicant_count": {
+            "type": "integer",
+            "description": "Number of applicants"
+        },
+        "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created timestamp"
+        }
+    },
+    "required": [
+        "id",
+        "user_id",
+        "title",
+        "status"
+    ]
+}

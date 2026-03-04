@@ -1,0 +1,78 @@
+{
+    "title": "contracts",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "user_id": {
+            "type": "string",
+            "description": "Creator user ID who owns this contract view"
+        },
+        "campaign_id": {
+            "type": "integer",
+            "description": "Campaign ID"
+        },
+        "merchant_user_id": {
+            "type": "string",
+            "description": "Merchant user ID"
+        },
+        "creator_user_id": {
+            "type": "string",
+            "description": "Creator user ID"
+        },
+        "agreed_rate": {
+            "type": "number",
+            "description": "Agreed rate in USD"
+        },
+        "conditions_met": {
+            "type": "integer",
+            "description": "Number of conditions met"
+        },
+        "conditions_total": {
+            "type": "integer",
+            "description": "Total conditions"
+        },
+        "threshold": {
+            "type": "integer",
+            "description": "Threshold to release final payment"
+        },
+        "current_milestone": {
+            "type": "integer",
+            "description": "Current milestone index"
+        },
+        "milestone_data": {
+            "type": "string",
+            "description": "JSON milestone progress data"
+        },
+        "escrow_amount": {
+            "type": "number",
+            "description": "Total escrow amount"
+        },
+        "released_amount": {
+            "type": "number",
+            "description": "Released amount so far"
+        },
+        "status": {
+            "type": "string",
+            "description": "active/completed/disputed/cancelled"
+        },
+        "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created timestamp"
+        },
+        "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Completed timestamp"
+        }
+    },
+    "required": [
+        "id",
+        "user_id",
+        "campaign_id",
+        "status"
+    ]
+}

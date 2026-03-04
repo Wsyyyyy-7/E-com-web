@@ -1,0 +1,101 @@
+{
+    "title": "user_profiles",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "user_id": {
+            "type": "string",
+            "description": "User ID from auth"
+        },
+        "role": {
+            "type": "string",
+            "description": "merchant or creator"
+        },
+        "display_name": {
+            "type": "string",
+            "description": "Display name"
+        },
+        "avatar_url": {
+            "type": "string",
+            "description": "Avatar URL"
+        },
+        "company_name": {
+            "type": "string",
+            "description": "Company name for merchants"
+        },
+        "bio": {
+            "type": "string",
+            "description": "Bio/description"
+        },
+        "country": {
+            "type": "string",
+            "description": "Country code"
+        },
+        "categories": {
+            "type": "string",
+            "description": "Comma-separated categories"
+        },
+        "tiktok_handle": {
+            "type": "string",
+            "description": "TikTok username"
+        },
+        "portfolio_links": {
+            "type": "string",
+            "description": "JSON array of portfolio links"
+        },
+        "rate_min": {
+            "type": "number",
+            "description": "Minimum rate USD"
+        },
+        "rate_max": {
+            "type": "number",
+            "description": "Maximum rate USD"
+        },
+        "completion_rate": {
+            "type": "number",
+            "description": "Completion rate percentage"
+        },
+        "ontime_rate": {
+            "type": "number",
+            "description": "On-time delivery rate"
+        },
+        "dispute_rate": {
+            "type": "number",
+            "description": "Dispute rate"
+        },
+        "trust_tier": {
+            "type": "string",
+            "description": "new/verified/trusted"
+        },
+        "subscription_plan": {
+            "type": "string",
+            "description": "basic/advanced/team for merchants"
+        },
+        "subscription_expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Subscription expiry"
+        },
+        "balance_frozen": {
+            "type": "number",
+            "description": "Frozen balance"
+        },
+        "balance_available": {
+            "type": "number",
+            "description": "Available balance"
+        },
+        "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created timestamp"
+        }
+    },
+    "required": [
+        "id",
+        "user_id",
+        "role"
+    ]
+}

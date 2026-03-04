@@ -1,0 +1,51 @@
+{
+    "title": "disputes",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "user_id": {
+            "type": "string",
+            "description": "Initiator user ID"
+        },
+        "contract_id": {
+            "type": "integer",
+            "description": "Related contract ID"
+        },
+        "reason": {
+            "type": "string",
+            "description": "Dispute reason"
+        },
+        "evidence": {
+            "type": "string",
+            "description": "JSON array of evidence URLs"
+        },
+        "status": {
+            "type": "string",
+            "description": "open/under_review/resolved/closed"
+        },
+        "resolution": {
+            "type": "string",
+            "description": "Resolution details"
+        },
+        "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created timestamp"
+        },
+        "resolved_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Resolved timestamp"
+        }
+    },
+    "required": [
+        "id",
+        "user_id",
+        "contract_id",
+        "reason",
+        "status"
+    ]
+}

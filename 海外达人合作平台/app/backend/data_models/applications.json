@@ -1,0 +1,45 @@
+{
+    "title": "applications",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "user_id": {
+            "type": "string",
+            "description": "Creator user ID"
+        },
+        "campaign_id": {
+            "type": "integer",
+            "description": "Campaign ID"
+        },
+        "proposed_rate": {
+            "type": "number",
+            "description": "Proposed rate in USD"
+        },
+        "message": {
+            "type": "string",
+            "description": "Application message"
+        },
+        "availability": {
+            "type": "string",
+            "description": "Available date range"
+        },
+        "status": {
+            "type": "string",
+            "description": "pending/accepted/rejected/withdrawn"
+        },
+        "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created timestamp"
+        }
+    },
+    "required": [
+        "id",
+        "user_id",
+        "campaign_id",
+        "status"
+    ]
+}
