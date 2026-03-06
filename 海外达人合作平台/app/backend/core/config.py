@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     class Config:
         case_sensitive = False
         extra = "ignore"
+        env_file = ".env"
+        env_file_encoding = "utf-8"
 
     def __getattr__(self, name: str) -> Any:
         """
