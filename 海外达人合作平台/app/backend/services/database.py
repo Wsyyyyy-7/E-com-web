@@ -42,7 +42,15 @@ async def initialize_database():
         logger.info("Database initialized successfully")
         logger.debug(f"[DB_OP] Database initialization completed in {time.time() - start_time:.4f}s")
     except Exception as e:
-        logger.error(f"Failed to initialize database: {e}")
+        _cause = getattr(e, "__cause__", None)
+        if isinstance(e, ConnectionRefusedError) or isinstance(_cause, ConnectionRefusedError) or "Connection refused" in str(e):
+            logger.error(
+                "Failed to connect to Supabase: Connection refused. "
+                "请检查：1) 项目是否已暂停（免费版会暂停）→ 在 Supabase 控制台恢复；"
+                "2) DATABASE_URL 与密码是否正确；3) 可尝试改用 Pooler 连接串（Session mode）。"
+            )
+        else:
+            logger.error(f"Failed to initialize database: {e}")
         raise
 
 

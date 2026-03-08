@@ -59,6 +59,69 @@
 
 ---
 
+## 数据库：仅使用 Supabase
+
+**运行态后端只连接 Supabase（PostgreSQL）**，不连接本地 SQLite。  
+本地 `app.db` 仅作临时或迁移用（例如用脚本把旧数据导入 Supabase 后即可弃用）。
+
+必须在 `app/backend/supabase.env` 中配置 `DATABASE_URL`（Supabase 的 PostgreSQL 连接串），否则后端启动会报错。
+
+### 在 Supabase 控制台获取（推荐用 Session mode，避免 Connection refused）
+
+1. 登录 [Supabase](https://supabase.com) → 进入你的项目。
+2. 若项目显示 **Paused**，先点 **Restore** 恢复。
+3. 左侧 **Project Settings** → **Database**。
+4. 在 **Connection string** 区域：
+   - 选 **URI**；
+   - **务必选 “Session mode”**（不要选 Direct connection），否则很多网络下会报 `Connection refused`。
+5. 复制整条 URI，格式类似：
+   ```text
+   postgresql://postgres.[PROJECT-REF]:[YOUR-PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres
+   ```
+6. 将 `[YOUR-PASSWORD]` 替换为你的**数据库密码**（与页面上一致；含 `@`、`#`、`/` 等需做 [URL 编码](https://en.wikipedia.org/wiki/Percent-encoding)）。
+
+### 你需要提供/填写的内容
+
+| 项 | 说明 |
+|----|------|
+| **Database password** | 项目 Database 密码（替换连接串里的 `[YOUR-PASSWORD]`） |
+| **Project ref** | 项目 ID，在连接串或项目 URL 里（如 `db.xxxxx.supabase.co` 中的 `xxxxx`） |
+| **Region**（若用 Pooler） | 如 `us-east-1`，在 Pooler 连接串里 |
+
+### 配置到本地
+
+在 **`app/backend/supabase.env`** 中只写一行（把下面整条换成你在控制台复制的 Session mode URI，并填好密码）：
+
+```bash
+DATABASE_URL=postgresql://postgres.你的项目ref:你的数据库密码@aws-0-区域.pooler.supabase.com:5432/postgres
+```
+
+后端只从 `supabase.env` 读取 `DATABASE_URL`；**必须使用 Session mode 的 URI**（主机是 `aws-0-xxx.pooler.supabase.com`），不要用 Direct（`db.xxx.supabase.co`），否则容易 Connection refused。  
+首次连接成功后，启动 uvicorn 时会自动建表。
+
+**若仍报 `Connection refused`**：  
+1) 确认项目已恢复（非 Paused）；  
+2) 确认用的是 **Session mode** 连接串（主机含 `pooler.supabase.com`）；  
+3) 密码与 Supabase 页面一致，特殊字符已 URL 编码；  
+4) 若曾多次输错密码，可在 Database 设置里 Unban IP 或等约 30 分钟。
+
+**Supabase 表显示 “Unrestricted”**：表示未开启 Row Level Security (RLS)。当前仅你的 FastAPI 后端用数据库密码连接，由 API 自己做鉴权即可；若以后要从前端直连 Supabase，再在 Supabase 控制台为表配置 RLS 策略。
+
+### 把本地 SQLite 数据迁移到 Supabase
+
+若你之前用过本地 `app.db`，可以用脚本把数据复制到 Supabase：
+
+1. 在 `app/backend` 下配置好 Supabase 的 `DATABASE_URL`（如使用 `supabase.env`）。
+2. 在 `app/backend` 下执行：
+
+   ```bash
+   python scripts/migrate_sqlite_to_supabase.py
+   ```
+
+脚本会先在 Supabase 上建表（若不存在），再把 `app.db` 里各表的数据插入 Supabase；已存在的表/主键会跳过（`ON CONFLICT (id) DO NOTHING`）。
+
+---
+
 ## 运行 Frontend
 
 1. 进入前端目录：
@@ -70,13 +133,13 @@
 2. 安装依赖：
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. 启动开发服务器：
 
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 
    - 默认地址：**http://localhost:3000**（可通过环境变量 `VITE_PORT` 修改）

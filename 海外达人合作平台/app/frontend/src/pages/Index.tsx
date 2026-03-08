@@ -1,5 +1,7 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
+import { useLocalePath, useLocaleNavigate } from '../hooks/useLocalePath';
 import Navbar from '../components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,8 +18,10 @@ const MERCHANT_IMG = 'https://mgx-backend-cdn.metadl.com/generate/images/999838/
 const FEATURES_BG = 'https://mgx-backend-cdn.metadl.com/generate/images/999838/2026-03-04/59100f41-83ac-48d9-8107-2c4ac9d6d9d6.png';
 
 export default function Index() {
-  const { isLoggedIn, login } = useAuth();
-  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { isLoggedIn } = useAuth();
+  const { path } = useLocalePath();
+  const localeNavigate = useLocaleNavigate();
 
   return (
     <div className="min-h-screen bg-gray-950">
@@ -39,34 +43,33 @@ export default function Index() {
           <div className="text-center max-w-4xl mx-auto">
             <Badge className="bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20 mb-6 text-sm px-4 py-1.5 border border-indigo-500/30 backdrop-blur-sm">
               <Sparkles className="w-4 h-4 mr-1.5" />
-              面向中国跨境电商的海外达人合作执行平台
+              {t('index.badge')}
             </Badge>
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight tracking-tight">
-              连接中国商家
+              {t('index.heroTitle1')}
               <br />
               <span className="bg-gradient-to-r from-indigo-400 via-sky-400 to-cyan-400 bg-clip-text text-transparent">
-                与海外创作者
+                {t('index.heroTitle2')}
               </span>
             </h1>
             <p className="text-lg md:text-xl text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed">
-              CreatorBridge 帮助中国跨境电商品牌高效对接海外 TikTok / Instagram / YouTube 达人，
-              通过智能合约和里程碑付款机制，让每一次合作都安全、透明、可追踪。
+              {t('index.heroDesc')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 size="lg"
                 className="bg-indigo-600 text-white hover:bg-indigo-500 h-13 px-8 text-base font-semibold shadow-lg shadow-indigo-600/30 transition-all hover:shadow-indigo-500/40 hover:scale-[1.02]"
-                onClick={() => navigate('/marketplace')}
+                onClick={() => localeNavigate('/marketplace')}
               >
-                浏览合作广场 <ArrowRight className="w-5 h-5 ml-2" />
+                {t('index.browseMarketplace')} <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
               <Button
                 size="lg"
                 variant="outline"
                 className="!bg-white/5 border border-white/20 text-white hover:!bg-white/10 h-13 px-8 text-base backdrop-blur-sm transition-all hover:border-white/40"
-                onClick={() => (isLoggedIn ? navigate('/role-select') : navigate('/auth'))}
+                onClick={() => (isLoggedIn ? localeNavigate('/role-select') : localeNavigate('/auth'))}
               >
-                {isLoggedIn ? '进入控制台' : '免费注册 / 登录'}
+                {isLoggedIn ? t('index.enterConsole') : t('index.signUpOrLogin')}
               </Button>
             </div>
           </div>
@@ -74,10 +77,10 @@ export default function Index() {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-20 max-w-4xl mx-auto">
             {[
-              { icon: Users, value: '500+', label: '注册达人' },
-              { icon: Store, value: '200+', label: '合作商家' },
-              { icon: DollarSign, value: '¥2M+', label: '交易总额' },
-              { icon: Star, value: '98%', label: '履约率' },
+              { icon: Users, value: '500+', labelKey: 'index.statsCreators' as const },
+              { icon: Store, value: '200+', labelKey: 'index.statsMerchants' as const },
+              { icon: DollarSign, value: '¥2M+', labelKey: 'index.statsVolume' as const },
+              { icon: Star, value: '98%', labelKey: 'index.statsFulfillment' as const },
             ].map((stat, i) => (
               <div
                 key={i}
@@ -85,62 +88,34 @@ export default function Index() {
               >
                 <stat.icon className="w-5 h-5 text-indigo-400 mx-auto mb-2" />
                 <p className="text-3xl font-bold text-white">{stat.value}</p>
-                <p className="text-xs text-gray-400 mt-1">{stat.label}</p>
+                <p className="text-xs text-gray-400 mt-1">{t(stat.labelKey)}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ===== How It Works — 平台流程 ===== */}
+      {/* ===== How It Works ===== */}
       <section className="py-24 bg-gray-950 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <Badge className="bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/10 mb-4 border border-indigo-500/20">
-              平台流程
+              {t('index.platformFlow')}
             </Badge>
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              四步完成合作
+              {t('index.stepsHeadline')}
             </h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              从发布需求到结算付款，CreatorBridge 让跨境达人合作变得简单高效
+              {t('index.stepsSubtitle')}
             </p>
           </div>
 
           <div className="grid md:grid-cols-4 gap-6">
             {[
-              {
-                step: '01',
-                icon: FileText,
-                title: '发布合作单',
-                titleEn: 'Post Campaign',
-                desc: '商家填写合作需求：目标国家、平台、预算、验收条件和里程碑付款比例。',
-                gradient: 'from-indigo-600 to-indigo-500',
-              },
-              {
-                step: '02',
-                icon: Users,
-                title: '达人申请',
-                titleEn: 'Creator Applies',
-                desc: '海外达人浏览合作广场，查看详情后提交申请和报价，商家审核并选择。',
-                gradient: 'from-sky-600 to-sky-500',
-              },
-              {
-                step: '03',
-                icon: Lock,
-                title: '资金托管',
-                titleEn: 'Escrow & Milestones',
-                desc: '商家预付资金进入托管账户，按里程碑逐步释放。',
-                gradient: 'from-amber-600 to-amber-500',
-              },
-              {
-                step: '04',
-                icon: CheckCircle,
-                title: '验收结算',
-                titleEn: 'Verify & Settle',
-                desc: '系统自动检查验收条件达标情况，满足阈值后自动释放尾款。',
-                gradient: 'from-emerald-600 to-emerald-500',
-              },
+              { step: '01', icon: FileText, titleKey: 'index.step1Title' as const, descKey: 'index.step1Desc' as const, gradient: 'from-indigo-600 to-indigo-500' },
+              { step: '02', icon: Users, titleKey: 'index.step2Title' as const, descKey: 'index.step2Desc' as const, gradient: 'from-sky-600 to-sky-500' },
+              { step: '03', icon: Lock, titleKey: 'index.step3Title' as const, descKey: 'index.step3Desc' as const, gradient: 'from-amber-600 to-amber-500' },
+              { step: '04', icon: CheckCircle, titleKey: 'index.step4Title' as const, descKey: 'index.step4Desc' as const, gradient: 'from-emerald-600 to-emerald-500' },
             ].map((item, i) => (
               <div key={i} className="relative group">
                 <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 h-full hover:border-gray-700 transition-all duration-300 hover:-translate-y-1">
@@ -150,9 +125,8 @@ export default function Index() {
                     </div>
                     <span className="text-4xl font-bold text-gray-800 group-hover:text-gray-700 transition-colors">{item.step}</span>
                   </div>
-                  <h3 className="text-lg font-bold text-white mb-1">{item.title}</h3>
-                  <p className="text-sm text-indigo-400 mb-3">{item.titleEn}</p>
-                  <p className="text-sm text-gray-400 leading-relaxed">{item.desc}</p>
+                  <h3 className="text-lg font-bold text-white mb-3">{t(item.titleKey)}</h3>
+                  <p className="text-sm text-gray-400 leading-relaxed">{t(item.descKey)}</p>
                 </div>
                 {i < 3 && (
                   <div className="hidden md:block absolute top-1/2 -right-3 transform -translate-y-1/2 z-10">
@@ -170,102 +144,76 @@ export default function Index() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <Badge className="bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/10 mb-4 border border-indigo-500/20">
-              双角色平台
+              {t('index.dualRoleBadge')}
             </Badge>
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              商家与达人，各取所需
+              {t('index.dualRoleTitle')}
             </h2>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-            {/* Merchant Card */}
             <div className="group relative rounded-2xl overflow-hidden border border-gray-800 hover:border-indigo-500/50 transition-all duration-500 hover:-translate-y-1">
-              {/* Image Header */}
               <div className="relative h-52 overflow-hidden">
-                <img
-                  src={MERCHANT_IMG}
-                  alt="Merchant workspace"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
+                <img src={MERCHANT_IMG} alt="Merchant" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent" />
                 <div className="absolute bottom-4 left-6 flex items-center gap-3">
                   <div className="w-14 h-14 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/30">
                     <Store className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-white">我是商家</h3>
-                    <p className="text-sm text-indigo-300">Merchant</p>
+                    <h3 className="text-xl font-bold text-white">{t('index.merchantLabel')}</h3>
+                    <p className="text-sm text-indigo-300">{t('index.merchantSub')}</p>
                   </div>
                 </div>
               </div>
-              {/* Content */}
               <div className="p-6 bg-gray-900">
-                <p className="text-gray-400 mb-5 text-sm">中国跨境电商品牌、工厂、贸易公司</p>
+                <p className="text-gray-400 mb-5 text-sm">{t('index.merchantDesc')}</p>
                 <ul className="space-y-3 mb-6">
-                  {[
-                    '发布合作单，精准匹配海外达人',
-                    '资金托管保障，里程碑分期付款',
-                    '验收条件自动检查，数据透明',
-                    '达人信誉评级，降低合作风险',
-                    '按月订阅，¥39/月起',
-                  ].map((item, i) => (
+                  {(['index.merchantBullet1', 'index.merchantBullet2', 'index.merchantBullet3', 'index.merchantBullet4', 'index.merchantBullet5'] as const).map((key, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                       <CheckCircle className="w-4 h-4 text-indigo-400 mt-0.5 flex-shrink-0" />
-                      {item}
+                      {t(key)}
                     </li>
                   ))}
                 </ul>
                 <Button
                   className="w-full bg-indigo-600 hover:bg-indigo-500 text-white h-11 transition-all hover:shadow-lg hover:shadow-indigo-600/20"
-                  onClick={() => (isLoggedIn ? navigate('/merchant') : navigate('/auth'))}
+                  onClick={() => (isLoggedIn ? localeNavigate('/merchant') : localeNavigate('/auth'))}
                 >
-                  商家入驻 <ArrowRight className="w-4 h-4 ml-2" />
+                  {t('index.merchantCta')} <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
             </div>
 
-            {/* Creator Card */}
             <div className="group relative rounded-2xl overflow-hidden border border-gray-800 hover:border-sky-500/50 transition-all duration-500 hover:-translate-y-1">
-              {/* Image Header */}
               <div className="relative h-52 overflow-hidden">
-                <img
-                  src={CREATOR_IMG}
-                  alt="Creator tools"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
+                <img src={CREATOR_IMG} alt="Creator" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent" />
                 <div className="absolute bottom-4 left-6 flex items-center gap-3">
                   <div className="w-14 h-14 bg-sky-600 rounded-xl flex items-center justify-center shadow-lg shadow-sky-600/30">
                     <Video className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-white">I'm a Creator</h3>
-                    <p className="text-sm text-sky-300">Content Creator</p>
+                    <h3 className="text-xl font-bold text-white">{t('index.creatorLabel')}</h3>
+                    <p className="text-sm text-sky-300">{t('index.creatorSub')}</p>
                   </div>
                 </div>
               </div>
-              {/* Content */}
               <div className="p-6 bg-gray-900">
-                <p className="text-gray-400 mb-5 text-sm">TikTok / Instagram / YouTube content creators worldwide</p>
+                <p className="text-gray-400 mb-5 text-sm">{t('index.creatorDesc')}</p>
                 <ul className="space-y-3 mb-6">
-                  {[
-                    'Discover brand collaborations from Chinese merchants',
-                    'Secure milestone-based payments via escrow',
-                    'Build your reputation with trust tiers',
-                    'Transparent conditions & automated verification',
-                    'Always free for creators',
-                  ].map((item, i) => (
+                  {(['index.creatorBullet1', 'index.creatorBullet2', 'index.creatorBullet3', 'index.creatorBullet4', 'index.creatorBullet5'] as const).map((key, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                       <CheckCircle className="w-4 h-4 text-sky-400 mt-0.5 flex-shrink-0" />
-                      {item}
+                      {t(key)}
                     </li>
                   ))}
                 </ul>
                 <Button
                   className="w-full bg-sky-600 hover:bg-sky-500 text-white h-11 transition-all hover:shadow-lg hover:shadow-sky-600/20"
-                  onClick={() => (isLoggedIn ? navigate('/creator') : navigate('/auth'))}
+                  onClick={() => (isLoggedIn ? localeNavigate('/creator') : localeNavigate('/auth'))}
                 >
-                  Creator Sign Up <ArrowRight className="w-4 h-4 ml-2" />
+                  {t('index.creatorCta')} <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
             </div>
@@ -287,45 +235,21 @@ export default function Index() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-16">
             <Badge className="bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/10 mb-4 border border-indigo-500/20">
-              核心功能
+              {t('index.featuresBadge')}
             </Badge>
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              为什么选择 CreatorBridge
+              {t('index.featuresTitle')}
             </h2>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              {
-                icon: Shield, title: '资金托管 Escrow',
-                gradient: 'from-indigo-600 to-indigo-500',
-                desc: '商家预付资金进入平台托管账户，确保达人完成任务后能收到报酬，双方权益有保障。',
-              },
-              {
-                icon: Zap, title: '里程碑付款 Milestones',
-                gradient: 'from-amber-600 to-amber-500',
-                desc: '将合作拆分为多个里程碑，每完成一个阶段自动释放对应比例的款项，降低双方风险。',
-              },
-              {
-                icon: Eye, title: '自动验收 Auto-Verify',
-                gradient: 'from-emerald-600 to-emerald-500',
-                desc: '设定播放量、点赞数、互动率等验收条件，系统自动检查达标情况，减少人工纠纷。',
-              },
-              {
-                icon: TrendingUp, title: '信誉体系 Trust Tiers',
-                gradient: 'from-sky-600 to-sky-500',
-                desc: '基于履约率、准时率、纠纷率的三维信誉评级，帮助商家快速识别优质达人。',
-              },
-              {
-                icon: Globe, title: '多国多平台 Multi-Market',
-                gradient: 'from-purple-600 to-purple-500',
-                desc: '覆盖北美、欧洲、东南亚等主要市场，支持 TikTok、Instagram、YouTube 等主流平台。',
-              },
-              {
-                icon: DollarSign, title: '灵活定价 Flexible Pricing',
-                gradient: 'from-rose-600 to-rose-500',
-                desc: '商家按月订阅（基础版/进阶版/团队版），达人永久免费使用，合作成本透明可控。',
-              },
+              { icon: Shield, titleKey: 'index.feat1Title' as const, descKey: 'index.feat1Desc' as const, gradient: 'from-indigo-600 to-indigo-500' },
+              { icon: Zap, titleKey: 'index.feat2Title' as const, descKey: 'index.feat2Desc' as const, gradient: 'from-amber-600 to-amber-500' },
+              { icon: Eye, titleKey: 'index.feat3Title' as const, descKey: 'index.feat3Desc' as const, gradient: 'from-emerald-600 to-emerald-500' },
+              { icon: TrendingUp, titleKey: 'index.feat4Title' as const, descKey: 'index.feat4Desc' as const, gradient: 'from-sky-600 to-sky-500' },
+              { icon: Globe, titleKey: 'index.feat5Title' as const, descKey: 'index.feat5Desc' as const, gradient: 'from-purple-600 to-purple-500' },
+              { icon: DollarSign, titleKey: 'index.feat6Title' as const, descKey: 'index.feat6Desc' as const, gradient: 'from-rose-600 to-rose-500' },
             ].map((feature, i) => (
               <div
                 key={i}
@@ -334,8 +258,8 @@ export default function Index() {
                 <div className={`w-12 h-12 bg-gradient-to-br ${feature.gradient} rounded-xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                   <feature.icon className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="font-bold text-white mb-2">{feature.title}</h3>
-                <p className="text-sm text-gray-400 leading-relaxed">{feature.desc}</p>
+                <h3 className="font-bold text-white mb-2">{t(feature.titleKey)}</h3>
+                <p className="text-sm text-gray-400 leading-relaxed">{t(feature.descKey)}</p>
               </div>
             ))}
           </div>
@@ -346,27 +270,26 @@ export default function Index() {
       <section className="py-24 bg-gray-950 relative">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">
-            开始您的跨境达人合作之旅
+            {t('index.ctaTitle')}
           </h2>
           <p className="text-gray-400 text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
-            无论您是寻找海外推广渠道的中国商家，还是希望与中国品牌合作的海外创作者，
-            CreatorBridge 都能帮您找到最佳合作伙伴。
+            {t('index.ctaSubtitle')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               size="lg"
               className="bg-indigo-600 text-white hover:bg-indigo-500 h-13 px-8 text-base font-semibold shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02]"
-              onClick={() => navigate('/marketplace')}
+              onClick={() => localeNavigate('/marketplace')}
             >
-              浏览合作广场 Browse Marketplace
+              {t('index.browseMarketplace')} <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
             <Button
               size="lg"
               variant="outline"
               className="!bg-white/5 border border-white/20 text-white hover:!bg-white/10 h-13 px-8 text-base backdrop-blur-sm transition-all hover:border-white/40"
-              onClick={() => (isLoggedIn ? navigate('/role-select') : navigate('/auth'))}
+              onClick={() => (isLoggedIn ? localeNavigate('/role-select') : localeNavigate('/auth'))}
             >
-              立即加入 Join Now
+              {t('index.joinNow')}
             </Button>
           </div>
         </div>
@@ -381,29 +304,29 @@ export default function Index() {
                 <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
                   <Globe className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-lg font-bold text-white">CreatorBridge</span>
+                <span className="text-lg font-bold text-white">{t('index.appName')}</span>
               </div>
-              <p className="text-sm text-gray-500">面向中国跨境电商的海外达人合作执行平台</p>
+              <p className="text-sm text-gray-500">{t('index.footerTagline')}</p>
             </div>
             <div>
-              <h4 className="text-white font-medium mb-3">快速链接</h4>
+              <h4 className="text-white font-medium mb-3">{t('index.quickLinks')}</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="/marketplace" className="hover:text-white transition-colors">合作广场</a></li>
-                <li><a href="/creators" className="hover:text-white transition-colors">达人目录</a></li>
-                <li><a href="/merchants" className="hover:text-white transition-colors">商家目录</a></li>
+                <li><Link to={path('/marketplace')} className="hover:text-white transition-colors">{t('nav.marketplace')}</Link></li>
+                <li><Link to={path('/creators')} className="hover:text-white transition-colors">{t('nav.creators')}</Link></li>
+                <li><Link to={path('/merchants')} className="hover:text-white transition-colors">{t('nav.merchants')}</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-white font-medium mb-3">平台</h4>
+              <h4 className="text-white font-medium mb-3">{t('index.platformLabel')}</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="/role-select" className="hover:text-white transition-colors">注册 / 登录</a></li>
-                <li><a href="/merchant" className="hover:text-white transition-colors">商家控制台</a></li>
-                <li><a href="/creator" className="hover:text-white transition-colors">Creator Studio</a></li>
+                <li><Link to={path('/auth')} className="hover:text-white transition-colors">{t('index.registerLogin')}</Link></li>
+                <li><Link to={path('/merchant')} className="hover:text-white transition-colors">{t('index.merchantConsole')}</Link></li>
+                <li><Link to={path('/creator')} className="hover:text-white transition-colors">{t('index.creatorStudio')}</Link></li>
               </ul>
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 text-center text-sm text-gray-500">
-            <p>© 2026 CreatorBridge. All rights reserved.</p>
+            <p>{t('index.copyright')}</p>
           </div>
         </div>
       </footer>

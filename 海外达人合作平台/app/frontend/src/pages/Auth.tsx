@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useLocaleNavigate, useLocalePath } from '../hooks/useLocalePath';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,7 +12,10 @@ import { Globe, Mail, Phone, Lock, ArrowRight, ArrowLeft, Loader2 } from 'lucide
 type Mode = 'email-login' | 'phone-login' | 'register';
 
 export default function AuthPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const localeNavigate = useLocaleNavigate();
+  const { path } = useLocalePath();
   const { loginWithEmail, loginWithPhone, register } = useAuth();
 
   const [mode, setMode] = useState<Mode>('email-login');
@@ -26,9 +31,9 @@ export default function AuthPage() {
     setLoading(true);
     try {
       await loginWithEmail(email.trim(), password);
-      navigate('/role-select');
+      localeNavigate('/role-select');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Email login failed');
+      setError(e instanceof Error ? e.message : t('auth.errorEmailLogin'));
     } finally {
       setLoading(false);
     }
@@ -39,9 +44,9 @@ export default function AuthPage() {
     setLoading(true);
     try {
       await loginWithPhone(phone.trim(), password);
-      navigate('/role-select');
+      localeNavigate('/role-select');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Phone login failed');
+      setError(e instanceof Error ? e.message : t('auth.errorPhoneLogin'));
     } finally {
       setLoading(false);
     }
@@ -50,7 +55,7 @@ export default function AuthPage() {
   const handleRegister = async () => {
     setError('');
     if (!email.trim() && !phone.trim()) {
-      setError('Please enter email or phone.');
+      setError(t('auth.errorEnterEmailOrPhone'));
       return;
     }
     setLoading(true);
@@ -61,9 +66,9 @@ export default function AuthPage() {
         password,
         name: name.trim() || undefined,
       });
-      navigate('/role-select');
+      localeNavigate('/role-select');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Register failed');
+      setError(e instanceof Error ? e.message : t('auth.errorRegister'));
     } finally {
       setLoading(false);
     }
@@ -73,11 +78,11 @@ export default function AuthPage() {
     <>
       <div className="space-y-2">
         <Label className="text-gray-300 flex items-center gap-2">
-          <Mail className="w-4 h-4" /> Email (optional)
+          <Mail className="w-4 h-4" /> {t('common.emailOptional')}
         </Label>
         <Input
           type="email"
-          placeholder="you@example.com"
+          placeholder={t('auth.placeholderEmail')}
           className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
           value={email}
           onChange={e => setEmail(e.target.value)}
@@ -85,11 +90,11 @@ export default function AuthPage() {
       </div>
       <div className="space-y-2">
         <Label className="text-gray-300 flex items-center gap-2">
-          <Phone className="w-4 h-4" /> Phone (optional)
+          <Phone className="w-4 h-4" /> {t('common.phoneOptional')}
         </Label>
         <Input
           type="tel"
-          placeholder="+86 13800000000"
+          placeholder={t('auth.placeholderPhone')}
           className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
           value={phone}
           onChange={e => setPhone(e.target.value)}
@@ -103,21 +108,21 @@ export default function AuthPage() {
       <div className="w-full max-w-md">
         <button
           type="button"
-          onClick={() => navigate('/')}
+          onClick={() => navigate(path('/'))}
           className="mb-6 flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
         >
           <ArrowLeft className="w-4 h-4" />
-          返回主页
+          {t('common.backToHome')}
         </button>
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
               <Globe className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-white">CreatorBridge</span>
+            <span className="text-2xl font-bold text-white">{t('index.appName')}</span>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">登录 / 注册</h1>
-          <p className="text-gray-400 text-sm">支持邮箱或手机号登录</p>
+          <h1 className="text-3xl font-bold text-white mb-2">{t('auth.title')}</h1>
+          <p className="text-gray-400 text-sm">{t('auth.subtitle')}</p>
         </div>
 
         <Card className="bg-gray-900 border-gray-800">
@@ -128,21 +133,21 @@ export default function AuthPage() {
                 className={mode === 'email-login' ? 'flex-1' : 'flex-1 !bg-transparent border-gray-700 text-gray-300'}
                 onClick={() => setMode('email-login')}
               >
-                邮箱登录
+                {t('auth.emailLogin')}
               </Button>
               <Button
                 variant={mode === 'phone-login' ? 'default' : 'outline'}
                 className={mode === 'phone-login' ? 'flex-1' : 'flex-1 !bg-transparent border-gray-700 text-gray-300'}
                 onClick={() => setMode('phone-login')}
               >
-                手机登录
+                {t('auth.phoneLogin')}
               </Button>
               <Button
                 variant={mode === 'register' ? 'default' : 'outline'}
                 className={mode === 'register' ? 'flex-1' : 'flex-1 !bg-transparent border-gray-700 text-gray-300'}
                 onClick={() => setMode('register')}
               >
-                注册
+                {t('auth.register')}
               </Button>
             </div>
 
@@ -152,11 +157,11 @@ export default function AuthPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-gray-300 flex items-center gap-2">
-                    <Mail className="w-4 h-4" /> Email
+                    <Mail className="w-4 h-4" /> {t('common.email')}
                   </Label>
                   <Input
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder={t('auth.placeholderEmail')}
                     className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
@@ -164,11 +169,11 @@ export default function AuthPage() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-gray-300 flex items-center gap-2">
-                    <Lock className="w-4 h-4" /> Password
+                    <Lock className="w-4 h-4" /> {t('common.password')}
                   </Label>
                   <Input
                     type="password"
-                    placeholder="Your password"
+                    placeholder={t('auth.placeholderPassword')}
                     className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
@@ -180,7 +185,7 @@ export default function AuthPage() {
                   onClick={handleEmailLogin}
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  使用邮箱登录 <ArrowRight className="w-4 h-4 ml-2" />
+                  {t('auth.emailLoginBtn')} <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
             )}
@@ -189,11 +194,11 @@ export default function AuthPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-gray-300 flex items-center gap-2">
-                    <Phone className="w-4 h-4" /> Phone
+                    <Phone className="w-4 h-4" /> {t('common.phone')}
                   </Label>
                   <Input
                     type="tel"
-                    placeholder="+86 13800000000"
+                    placeholder={t('auth.placeholderPhone')}
                     className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
                     value={phone}
                     onChange={e => setPhone(e.target.value)}
@@ -201,11 +206,11 @@ export default function AuthPage() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-gray-300 flex items-center gap-2">
-                    <Lock className="w-4 h-4" /> Password
+                    <Lock className="w-4 h-4" /> {t('common.password')}
                   </Label>
                   <Input
                     type="password"
-                    placeholder="Your password"
+                    placeholder={t('auth.placeholderPassword')}
                     className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
@@ -217,7 +222,7 @@ export default function AuthPage() {
                   onClick={handlePhoneLogin}
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  使用手机号登录 <ArrowRight className="w-4 h-4 ml-2" />
+                  {t('auth.phoneLoginBtn')} <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
             )}
@@ -227,20 +232,20 @@ export default function AuthPage() {
                 {renderEmailPhoneFields()}
                 <div className="space-y-2">
                   <Label className="text-gray-300 flex items-center gap-2">
-                    <Lock className="w-4 h-4" /> Password
+                    <Lock className="w-4 h-4" /> {t('common.password')}
                   </Label>
                   <Input
                     type="password"
-                    placeholder="Set a password"
+                    placeholder={t('auth.placeholderPasswordSet')}
                     className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-gray-300">Display Name (optional)</Label>
+                  <Label className="text-gray-300">{t('common.displayName')}</Label>
                   <Input
-                    placeholder="Your name or brand"
+                    placeholder={t('auth.placeholderName')}
                     className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
                     value={name}
                     onChange={e => setName(e.target.value)}
@@ -252,7 +257,7 @@ export default function AuthPage() {
                   onClick={handleRegister}
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  注册并继续 <ArrowRight className="w-4 h-4 ml-2" />
+                  {t('auth.registerBtn')} <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
             )}

@@ -2,9 +2,11 @@ import asyncio
 import logging
 import os
 import re
+import ssl
 import time
 from pathlib import Path
 
+import asyncpg
 from asyncpg.exceptions import (
     DuplicateTableError,
     UniqueViolationError,
@@ -37,7 +39,19 @@ class DatabaseManager:
         This guards against env overrides like DATABASE_URL using sync drivers
         (e.g., sqlite:/// or postgresql://), which would otherwise load 'pysqlite' or
         other sync drivers and break async engine initialization.
+
+        For Supabase Session mode (pooler), username must be postgres.PROJECT_REF;
+        encoding the dot in the username (postgres. -> postgres%2E) ensures nothing
+        downstream truncates it to "postgres" and causes "password authentication failed".
         """
+        # Preserve Supabase pooler username postgres.PROJECT_REF by encoding the dot
+        if re.match(r"postgresql?://postgres\.[^:/]+:", raw_url):
+            raw_url = re.sub(
+                r"(postgresql?://)(postgres)\.([^:]+)(:)",
+                r"\1\2%2E\3\4",
+                raw_url,
+                count=1,
+            )
         try:
             url = make_url(raw_url)
         except Exception as e:
@@ -70,6 +84,9 @@ class DatabaseManager:
         normalized = str(url)
         if normalized != raw_url:
             logger.warning("Adjusted database URL driver for async compatibility")
+        # 用于排查 Supabase pooler：确认实际使用的数据库用户名（避免被截成 postgres）
+        if url.username:
+            logger.info("Database connection user (for Supabase pooler should be postgres.PROJECT_REF): %s", url.username)
         return normalized
 
     @staticmethod
@@ -98,38 +115,89 @@ class DatabaseManager:
             raise ValueError("DATABASE_URL environment variable is required")
 
         try:
-            logger.info("Normalizing database URL for async compatibility...")
-            database_url = self._normalize_async_database_url(settings.database_url)
+            raw_url = settings.database_url
+            if raw_url.startswith("postgres://"):
+                raw_url = "postgresql://" + raw_url[len("postgres://"):]
+            parsed = make_url(raw_url)
+            host = parsed.host or ""
+            is_supabase_pooler = "pooler.supabase.com" in host
 
-            logger.info("Creating async database engine...")
-            # Configure engine based on environment (Lambda vs non-Lambda)
-            engine_kwargs = {
-                "echo": settings.debug,
-            }
+            if is_supabase_pooler:
+                # 完全绕过 URL 解析：用显式参数调用 asyncpg.connect，避免用户名 postgres.PROJECT_REF 被截断
+                user = parsed.username or "postgres"
+                password = parsed.password or ""
+                port = int(parsed.port or 5432)
+                database = parsed.database or "postgres"
+                _ssl_ctx = ssl.create_default_context()
+                _ssl_ctx.check_hostname = False
+                _ssl_ctx.verify_mode = ssl.CERT_NONE
+                logger.info(
+                    "Using Supabase pooler with explicit params (user=%s, host=%s)",
+                    user,
+                    host,
+                )
 
-            # Check if we're in a Lambda environment
-            is_lambda = bool(
-                os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
-                or os.environ.get("IS_LAMBDA", "").lower() in ("true", "1", "yes")
-            )
+                async def _async_creator():
+                    return await asyncpg.connect(
+                        host=host,
+                        port=port,
+                        user=user,
+                        password=password,
+                        database=database,
+                        ssl=_ssl_ctx,
+                        timeout=15,
+                    )
 
-            if is_lambda:
-                # Lambda: Use NullPool to avoid connection state conflicts
-                # NullPool creates a fresh connection for each request, avoiding "cannot switch to state" errors
-                engine_kwargs["poolclass"] = NullPool
-                # NullPool doesn't support pool_timeout, pool_size, max_overflow, pool_recycle, or pool_pre_ping
-                # These parameters are only valid for QueuePool
-                logger.info("Using NullPool for Lambda environment to avoid connection state conflicts")
+                engine_kwargs = {"echo": settings.debug}
+                is_lambda = bool(
+                    os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+                    or os.environ.get("IS_LAMBDA", "").lower() in ("true", "1", "yes")
+                )
+                if is_lambda:
+                    engine_kwargs["poolclass"] = NullPool
+                    logger.info("Using NullPool for Lambda environment")
+                else:
+                    engine_kwargs["pool_pre_ping"] = True
+                    engine_kwargs["pool_size"] = 10
+                    engine_kwargs["max_overflow"] = 20
+                    engine_kwargs["pool_recycle"] = 3600
+                    engine_kwargs["pool_timeout"] = 30
+                self.engine = create_async_engine(
+                    "postgresql+asyncpg://",
+                    async_creator=_async_creator,
+                    **engine_kwargs,
+                )
             else:
-                # Non-Lambda: Use QueuePool with connection pooling
-                engine_kwargs["pool_pre_ping"] = True  # Verify connections before using them
-                engine_kwargs["pool_size"] = 10  # Connection pool size
-                engine_kwargs["max_overflow"] = 20  # Maximum overflow connections
-                engine_kwargs["pool_recycle"] = 3600  # Connection recycle time (1 hour)
-                engine_kwargs["pool_timeout"] = 30  # Connection acquisition timeout (30 seconds)
-                logger.info("Using QueuePool with connection pooling for non-Lambda environment")
-
-            self.engine = create_async_engine(database_url, **engine_kwargs)
+                logger.info("Normalizing database URL for async compatibility...")
+                database_url = self._normalize_async_database_url(settings.database_url)
+                logger.info("Creating async database engine...")
+                engine_kwargs = {"echo": settings.debug}
+                is_lambda = bool(
+                    os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+                    or os.environ.get("IS_LAMBDA", "").lower() in ("true", "1", "yes")
+                )
+                if is_lambda:
+                    engine_kwargs["poolclass"] = NullPool
+                    logger.info("Using NullPool for Lambda environment to avoid connection state conflicts")
+                else:
+                    engine_kwargs["pool_pre_ping"] = True
+                    engine_kwargs["pool_size"] = 10
+                    engine_kwargs["max_overflow"] = 20
+                    engine_kwargs["pool_recycle"] = 3600
+                    engine_kwargs["pool_timeout"] = 30
+                    logger.info("Using QueuePool with connection pooling for non-Lambda environment")
+                _ssl_ctx = ssl.create_default_context()
+                _ssl_ctx.check_hostname = False
+                _ssl_ctx.verify_mode = ssl.CERT_NONE
+                engine_kwargs.setdefault("connect_args", {})["ssl"] = _ssl_ctx
+                engine_kwargs.setdefault("connect_args", {})["timeout"] = 15
+                try:
+                    _parsed = make_url(database_url)
+                    if _parsed.username and "." in (_parsed.username or ""):
+                        engine_kwargs["connect_args"]["user"] = _parsed.username
+                except Exception:
+                    pass
+                self.engine = create_async_engine(database_url, **engine_kwargs)
             logger.info("Database engine created successfully")
 
             logger.info("Creating async session maker...")

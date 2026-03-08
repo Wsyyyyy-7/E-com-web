@@ -1,5 +1,6 @@
 venv/
 .env
+supabase.env
 *.log
 node_modules/
 build/

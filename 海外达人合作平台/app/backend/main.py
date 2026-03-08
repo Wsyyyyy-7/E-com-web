@@ -224,6 +224,13 @@ def root():
     return {"message": "FastAPI Modular Template is running"}
 
 
+@app.get("/api/config")
+def get_config():
+    """Runtime config for frontend (API_BASE_URL). Used by login and API client."""
+    api_base = os.environ.get("VITE_API_BASE_URL") or settings.backend_url
+    return {"API_BASE_URL": api_base}
+
+
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
