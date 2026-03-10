@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from datetime import datetime, date
 
@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
 from services.campaigns import CampaignsService
+from services.translate import translate_campaign_to_english
 from dependencies.auth import get_current_user
 from schemas.auth import UserResponse
 
@@ -39,6 +40,11 @@ class CampaignsData(BaseModel):
     retention_days: int = None
     keywords: str = None
     compliance_notes: str = None
+    product_image_url: Optional[str] = None
+    title_en: Optional[str] = None
+    description_en: Optional[str] = None
+    conditions_en: Optional[str] = None
+    milestones_en: Optional[str] = None
     status: str
     applicant_count: int = None
     created_at: Optional[datetime] = None
@@ -63,6 +69,11 @@ class CampaignsUpdateData(BaseModel):
     retention_days: Optional[int] = None
     keywords: Optional[str] = None
     compliance_notes: Optional[str] = None
+    product_image_url: Optional[str] = None
+    title_en: Optional[str] = None
+    description_en: Optional[str] = None
+    conditions_en: Optional[str] = None
+    milestones_en: Optional[str] = None
     status: Optional[str] = None
     applicant_count: Optional[int] = None
     created_at: Optional[datetime] = None
@@ -89,6 +100,11 @@ class CampaignsResponse(BaseModel):
     retention_days: Optional[int] = None
     keywords: Optional[str] = None
     compliance_notes: Optional[str] = None
+    product_image_url: Optional[str] = None
+    title_en: Optional[str] = None
+    description_en: Optional[str] = None
+    conditions_en: Optional[str] = None
+    milestones_en: Optional[str] = None
     status: str
     applicant_count: Optional[int] = None
     created_at: Optional[datetime] = None
@@ -192,10 +208,21 @@ async def query_campaignss_all(
             skip=skip,
             limit=limit,
             query_dict=query_dict,
-            sort=sort
+            sort=sort,
         )
+
+        # Public marketplace endpoint: hide total_budget from response so only merchants
+        # (who use the authenticated /api/v1/entities/campaigns endpoint) can see it.
+        items = result.get("items", [])
+        for item in items:
+            try:
+                # ORM model instance; setting attribute is enough for Pydantic response model
+                setattr(item, "total_budget", None)
+            except Exception:
+                continue
+
         logger.debug(f"Found {result['total']} campaignss")
-        return result
+        return {**result, "items": items}
     except HTTPException:
         raise
     except Exception as e:
@@ -234,12 +261,21 @@ async def create_campaigns(
     current_user: UserResponse = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a new campaigns"""
+    """Create a new campaigns. English versions (title_en, description_en, etc.) are auto-generated when content has CJK."""
     logger.debug(f"Creating new campaigns with data: {data}")
     
+    payload = data.model_dump()
+    en_fields = translate_campaign_to_english(
+        title=payload.get("title") or "",
+        description=payload.get("description"),
+        conditions_json=payload.get("conditions"),
+        milestones_json=payload.get("milestones"),
+    )
+    payload.update(en_fields)
+
     service = CampaignsService(db)
     try:
-        result = await service.create(data.model_dump(), user_id=str(current_user.id))
+        result = await service.create(payload, user_id=str(current_user.id))
         if not result:
             raise HTTPException(status_code=400, detail="Failed to create campaigns")
         
@@ -267,7 +303,15 @@ async def create_campaignss_batch(
     
     try:
         for item_data in request.items:
-            result = await service.create(item_data.model_dump(), user_id=str(current_user.id))
+            payload = item_data.model_dump()
+            en_fields = translate_campaign_to_english(
+                title=payload.get("title") or "",
+                description=payload.get("description"),
+                conditions_json=payload.get("conditions"),
+                milestones_json=payload.get("milestones"),
+            )
+            payload.update(en_fields)
+            result = await service.create(payload, user_id=str(current_user.id))
             if result:
                 results.append(result)
         
@@ -293,8 +337,9 @@ async def update_campaignss_batch(
     
     try:
         for item in request.items:
-            # Only include non-None values for partial updates
             update_dict = {k: v for k, v in item.updates.model_dump().items() if v is not None}
+            existing = await service.get_by_id(item.id, user_id=str(current_user.id))
+            _ensure_en_fields_for_update(update_dict, existing)
             result = await service.update(item.id, update_dict, user_id=str(current_user.id))
             if result:
                 results.append(result)
@@ -307,6 +352,27 @@ async def update_campaignss_batch(
         raise HTTPException(status_code=500, detail=f"Batch update failed: {str(e)}")
 
 
+def _ensure_en_fields_for_update(update_dict: dict, existing: Optional[Any]) -> None:
+    """If update_dict touches title/description/conditions/milestones, recompute _en and merge."""
+    need_title = "title" in update_dict
+    need_desc = "description" in update_dict
+    need_cond = "conditions" in update_dict
+    need_mil = "milestones" in update_dict
+    if not (need_title or need_desc or need_cond or need_mil):
+        return
+    title = update_dict.get("title") if need_title else (getattr(existing, "title", None) if existing else None)
+    description = update_dict.get("description") if need_desc else (getattr(existing, "description", None) if existing else None)
+    conditions_json = update_dict.get("conditions") if need_cond else (getattr(existing, "conditions", None) if existing else None)
+    milestones_json = update_dict.get("milestones") if need_mil else (getattr(existing, "milestones", None) if existing else None)
+    en_fields = translate_campaign_to_english(
+        title=title or "",
+        description=description,
+        conditions_json=conditions_json,
+        milestones_json=milestones_json,
+    )
+    update_dict.update(en_fields)
+
+
 @router.put("/{id}", response_model=CampaignsResponse)
 async def update_campaigns(
     id: int,
@@ -314,13 +380,14 @@ async def update_campaigns(
     current_user: UserResponse = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Update an existing campaigns (requires ownership)"""
+    """Update an existing campaigns (requires ownership). English fields are refreshed when title/description/conditions/milestones change."""
     logger.debug(f"Updating campaigns {id} with data: {data}")
 
     service = CampaignsService(db)
     try:
-        # Only include non-None values for partial updates
         update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
+        existing = await service.get_by_id(id, user_id=str(current_user.id))
+        _ensure_en_fields_for_update(update_dict, existing)
         result = await service.update(id, update_dict, user_id=str(current_user.id))
         if not result:
             logger.warning(f"Campaigns with id {id} not found for update")

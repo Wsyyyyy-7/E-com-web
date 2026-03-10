@@ -37,3 +37,9 @@ stripe>=12.0.0
 
 # auth password hashing
 passlib[bcrypt]>=1.7.4
+
+# optional: translate campaign content (zh -> en) for EN locale
+deep-translator>=1.11.0
+
+# Supabase Storage for product image upload (public deployment)
+supabase>=2.0.0

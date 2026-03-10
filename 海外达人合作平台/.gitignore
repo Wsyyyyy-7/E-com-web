@@ -7,3 +7,5 @@ build/
 __pycache__
 dist
 vite.config.ts.timestamp-*
+# Merchant-uploaded product images (local storage)
+app/backend/uploads/

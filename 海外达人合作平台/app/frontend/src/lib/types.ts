@@ -43,6 +43,12 @@ export interface Campaign {
   retention_days: number;
   keywords?: string;
   compliance_notes?: string;
+  product_image_url?: string | null;
+  /** English version generated at publish time when original has CJK */
+  title_en?: string | null;
+  description_en?: string | null;
+  conditions_en?: string | null;
+  milestones_en?: string | null;
   status: 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
   applicant_count: number;
   created_at: string;

@@ -165,6 +165,7 @@ try:
         user as user_router,
         settings as settings_router,
         health as database_router,
+        translate as translate_router,
     )
 
     for router_module in (
@@ -179,6 +180,7 @@ try:
         user_router,
         settings_router,
         database_router,
+        translate_router,
     ):
         if hasattr(router_module, "router"):
             app.include_router(router_module.router)

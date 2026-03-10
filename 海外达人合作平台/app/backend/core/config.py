@@ -29,6 +29,17 @@ class Settings(BaseSettings):
     # Database: 仅从 supabase.env 读取，必须为 Supabase (PostgreSQL)；本地 app.db 仅作临时/迁移用
     database_url: Optional[str] = None
 
+    # OSS / Storage (optional): for product image upload. Env: OSS_SERVICE_URL, OSS_API_KEY
+    oss_service_url: Optional[str] = None
+    oss_api_key: Optional[str] = None
+
+    # Local upload dir for merchant product images (fallback when Supabase Storage not set). Relative to backend root.
+    upload_dir: str = "uploads"
+
+    # Supabase Storage: for product images (public deployment). Read from supabase.env.
+    supabase_url: Optional[str] = None
+    supabase_service_role_key: Optional[str] = None
+
     @property
     def backend_url(self) -> str:
         """Generate backend URL from host and port."""
@@ -89,17 +100,25 @@ if not _supabase_env.exists():
         "缺少 supabase.env。请在 app/backend 下创建 supabase.env，并配置 DATABASE_URL=postgresql://..."
     )
 _db_url: Optional[str] = None
+_supabase_url: Optional[str] = None
+_supabase_key: Optional[str] = None
 with open(_supabase_env, encoding="utf-8") as f:
     for line in f:
         line = line.strip()
         if not line or line.startswith("#"):
             continue
-        if "=" in line and line.split("=", 1)[0].strip() == "DATABASE_URL":
-            _db_url = line.split("=", 1)[1].strip().strip("'\"").strip()
-            break
+        if "=" in line:
+            key, _, val = line.partition("=")
+            key = key.strip()
+            val = val.strip().strip("'\"").strip()
+            if key == "DATABASE_URL":
+                _db_url = val
+            elif key == "SUPABASE_URL":
+                _supabase_url = val
+            elif key == "SUPABASE_SERVICE_ROLE_KEY":
+                _supabase_key = val
         if line.startswith("postgresql://") or line.startswith("postgres://"):
             _db_url = line.strip("'\"").strip()
-            break
 # 接受 postgresql:// 或 postgres://（均为 PostgreSQL）
 if not _db_url:
     raise ValueError(
@@ -111,9 +130,11 @@ if "postgresql" not in _db_url and "postgres://" not in _db_url:
         " 当前值开头：%s" % (_db_url[:50] + "..." if len(_db_url) > 50 else _db_url)
     )
 # 统一为 postgresql:// 便于 SQLAlchemy 识别
-if _db_url.startswith("postgres://"):
+if _db_url and _db_url.startswith("postgres://"):
     _db_url = "postgresql://" + _db_url[len("postgres://"):]
 settings.database_url = _db_url
+settings.supabase_url = _supabase_url
+settings.supabase_service_role_key = _supabase_key
 # 打印连接目标（便于排查 Connection refused）
 try:
     from urllib.parse import urlparse

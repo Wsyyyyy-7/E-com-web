@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
+import { useLocalePath, useLocaleNavigate } from '../hooks/useLocalePath';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Globe, Store, Video, ArrowRight, Loader2 } from 'lucide-react';
@@ -11,23 +11,24 @@ const CREATOR_IMG = 'https://mgx-backend-cdn.metadl.com/generate/images/999838/2
 const MERCHANT_IMG = 'https://mgx-backend-cdn.metadl.com/generate/images/999838/2026-03-04/3881b601-d08f-4cb8-8397-4e67f42dd8ab.png';
 
 export default function RoleSelect() {
-  const { isLoggedIn, profile, selectRole, login, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { isLoggedIn, profile, selectRole, loading: authLoading } = useAuth();
+  const { path } = useLocalePath();
+  const localeNavigate = useLocaleNavigate();
   const [selectedRole, setSelectedRole] = useState<'merchant' | 'creator' | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // If已经有角色信息，自动跳转到对应控制台
   useEffect(() => {
     if (!authLoading && isLoggedIn && profile) {
-      navigate(profile.role === 'merchant' ? '/merchant' : '/creator');
+      localeNavigate(profile.role === 'merchant' ? path('/merchant') : path('/creator'));
     }
-  }, [authLoading, isLoggedIn, profile, navigate]);
+  }, [authLoading, isLoggedIn, profile, localeNavigate, path]);
 
   const shouldRedirectToHome = !authLoading && !isLoggedIn;
   useEffect(() => {
-    if (shouldRedirectToHome) navigate('/');
-  }, [shouldRedirectToHome, navigate]);
+    if (shouldRedirectToHome) localeNavigate(path('/'));
+  }, [shouldRedirectToHome, localeNavigate, path]);
 
   if (authLoading) {
     return (
@@ -50,7 +51,7 @@ export default function RoleSelect() {
     setSubmitting(true);
     try {
       await selectRole(selectedRole, displayName.trim());
-      navigate(selectedRole === 'merchant' ? '/merchant' : '/creator');
+      localeNavigate(selectedRole === 'merchant' ? path('/merchant') : path('/creator'));
     } finally {
       setSubmitting(false);
     }
@@ -64,14 +65,13 @@ export default function RoleSelect() {
             <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
               <Globe className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-white">CreatorBridge</span>
+            <span className="text-2xl font-bold text-white">{t('roleSelect.appName')}</span>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">选择您的角色 / Choose Your Role</h1>
-          <p className="text-gray-400">请选择您在平台上的身份</p>
+          <h1 className="text-3xl font-bold text-white mb-2">{t('roleSelect.heading')}</h1>
+          <p className="text-gray-400">{t('roleSelect.subtitle')}</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Merchant Card */}
           <div
             className={`cursor-pointer transition-all rounded-2xl overflow-hidden border-2 group ${
               selectedRole === 'merchant'
@@ -90,17 +90,16 @@ export default function RoleSelect() {
               </div>
             </div>
             <div className="p-6 bg-gray-900">
-              <h3 className="text-xl font-bold text-white mb-1">我是商家</h3>
-              <p className="text-sm text-gray-400 mb-4">I&apos;m a Merchant</p>
+              <h3 className="text-xl font-bold text-white mb-1">{t('roleSelect.iamMerchant')}</h3>
+              <p className="text-sm text-gray-400 mb-4">{t('roleSelect.iamMerchantEn')}</p>
               <ul className="text-sm text-gray-400 space-y-1.5">
-                <li>• 发布合作单，寻找海外达人</li>
-                <li>• 资金托管，里程碑付款</li>
-                <li>• 按月订阅，¥39/月起</li>
+                <li>• {t('roleSelect.merchantBullet1')}</li>
+                <li>• {t('roleSelect.merchantBullet2')}</li>
+                <li>• {t('roleSelect.merchantBullet3')}</li>
               </ul>
             </div>
           </div>
 
-          {/* Creator Card */}
           <div
             className={`cursor-pointer transition-all rounded-2xl overflow-hidden border-2 group ${
               selectedRole === 'creator'
@@ -119,12 +118,12 @@ export default function RoleSelect() {
               </div>
             </div>
             <div className="p-6 bg-gray-900">
-              <h3 className="text-xl font-bold text-white mb-1">I&apos;m a Creator</h3>
-              <p className="text-sm text-gray-400 mb-4">我是达人</p>
+              <h3 className="text-xl font-bold text-white mb-1">{t('roleSelect.iamCreator')}</h3>
+              <p className="text-sm text-gray-400 mb-4">{t('roleSelect.iamCreatorEn')}</p>
               <ul className="text-sm text-gray-400 space-y-1.5">
-                <li>• Discover brand collaborations</li>
-                <li>• Milestone-based payments</li>
-                <li>• Always free for creators</li>
+                <li>• {t('roleSelect.creatorBullet1')}</li>
+                <li>• {t('roleSelect.creatorBullet2')}</li>
+                <li>• {t('roleSelect.creatorBullet3')}</li>
               </ul>
             </div>
           </div>
@@ -133,21 +132,21 @@ export default function RoleSelect() {
         {selectedRole && (
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
             <Label className="text-sm font-medium text-gray-300">
-              {selectedRole === 'merchant' ? '显示名称 / 公司名称' : 'Display Name'}
+              {t('roleSelect.displayNameLabel')}
             </Label>
             <Input
               className="mt-2 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus-visible:ring-indigo-500"
-              placeholder={selectedRole === 'merchant' ? '例如：深圳XX贸易有限公司' : 'e.g., Sarah Johnson'}
+              placeholder={selectedRole === 'merchant' ? t('roleSelect.displayNamePlaceholder') : t('roleSelect.creatorDisplayNamePlaceholder')}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
             />
             <Button
               className="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 text-white h-11"
-            disabled={!selectedRole || !displayName.trim() || submitting}
+              disabled={!selectedRole || !displayName.trim() || submitting}
               onClick={handleSubmit}
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {submitting ? '创建中...' : '确认并进入'} <ArrowRight className="ml-2 w-4 h-4" />
+              {submitting ? t('roleSelect.creating') : t('roleSelect.confirm')} <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
           </div>
         )}

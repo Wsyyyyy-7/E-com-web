@@ -90,13 +90,24 @@
 
 ### 配置到本地
 
-在 **`app/backend/supabase.env`** 中只写一行（把下面整条换成你在控制台复制的 Session mode URI，并填好密码）：
+在 **`app/backend/supabase.env`** 中配置（每行一个键值对）：
 
 ```bash
 DATABASE_URL=postgresql://postgres.你的项目ref:你的数据库密码@aws-0-区域.pooler.supabase.com:5432/postgres
 ```
 
-后端只从 `supabase.env` 读取 `DATABASE_URL`；**必须使用 Session mode 的 URI**（主机是 `aws-0-xxx.pooler.supabase.com`），不要用 Direct（`db.xxx.supabase.co`），否则容易 Connection refused。  
+**若需公网部署、商家上传产品图**，请再增加两行（图片会存到 Supabase Storage，不占本机磁盘）：
+
+```bash
+SUPABASE_URL=https://你的项目ref.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=你的_service_role_密钥
+```
+
+- `SUPABASE_URL`：在 Supabase 控制台 **Project Settings → API → Project URL**。
+- `SUPABASE_SERVICE_ROLE_KEY`：同一页 **Project API keys → service_role**（仅后端使用，不要暴露到前端）。  
+配置后，商家上传的图片会保存到 Supabase Storage 的 `campaign-assets` 桶（首次上传时自动创建），公网可直接访问图片链接。
+
+后端从 `supabase.env` 读取 `DATABASE_URL`（必填）以及可选的 `SUPABASE_URL`、`SUPABASE_SERVICE_ROLE_KEY`。**必须使用 Session mode 的 URI**（主机是 `aws-0-xxx.pooler.supabase.com`），不要用 Direct（`db.xxx.supabase.co`），否则容易 Connection refused。  
 首次连接成功后，启动 uvicorn 时会自动建表。
 
 **若仍报 `Connection refused`**：  

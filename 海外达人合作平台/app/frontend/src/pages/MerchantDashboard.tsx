@@ -20,8 +20,9 @@ import {
   Globe, LayoutDashboard, PlusCircle, FileText, Wallet, MessageSquare,
   AlertTriangle, LogOut, ChevronRight, Users, DollarSign, Clock,
   CheckCircle, XCircle, Loader2, Send, CreditCard, QrCode, Sparkles,
-  Eye, Trash2
+  Eye, Trash2, Upload
 } from 'lucide-react';
+import { getAPIBaseURL } from '../lib/config';
 
 type TabType = 'dashboard' | 'create' | 'orders' | 'wallet' | 'messages' | 'disputes' | 'subscription';
 
@@ -184,6 +185,7 @@ export default function MerchantDashboard() {
         )}
         {activeTab === 'create' && (
           <CreateCampaignView
+            getToken={() => getAuthToken?.() ?? getToken()}
             onCreateCampaign={async (payload) => {
               const token = getAuthToken?.() ?? getToken();
               if (!token) throw new Error('请先登录');
@@ -340,23 +342,47 @@ function DashboardView({
   );
 }
 
+/** Upload product image to backend (local storage, no OSS required). */
+async function uploadProductImage(file: File, token: string): Promise<string> {
+  const base = getAPIBaseURL();
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(`${base}/api/v1/storage/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    const msg = data.detail || (await res.text()) || '上传失败';
+    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+  }
+  const data = await res.json();
+  if (!data?.url) throw new Error('未返回图片地址');
+  return data.url;
+}
+
 /* ==================== Create Campaign View ==================== */
 function CreateCampaignView({
   onCreateCampaign,
   onCreated,
+  getToken,
 }: {
   onCreateCampaign: (payload: Record<string, unknown>) => Promise<Campaign>;
   onCreated: (c: Campaign) => void;
+  getToken: () => string | null;
 }) {
   const [form, setForm] = useState({
     title: '', description: '', country: 'US', platform: 'tiktok', category: '美妆',
     collab_type: 'post_to_tiktok', total_budget: '', per_creator_min: '', per_creator_max: '',
     threshold: '3', deadline_apply: '', deadline_publish: '', retention_days: '7',
     keywords: '', compliance_notes: '',
+    product_image_url: '',
   });
   const [conditions, setConditions] = useState<string[]>(['']);
   const [milestones, setMilestones] = useState(DEFAULT_MILESTONES.map(m => ({ ...m })));
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const addCondition = () => {
     if (conditions.length < 5) setConditions([...conditions, '']);
@@ -373,6 +399,7 @@ function CreateCampaignView({
   const handleSubmit = async () => {
     if (!form.title.trim()) { toast.error('请填写合作标题'); return; }
     if (!form.total_budget) { toast.error('请填写总预算'); return; }
+    if (!form.product_image_url.trim()) { toast.error('请上传产品图片'); return; }
     const validConditions = conditions.filter(c => c.trim());
     if (validConditions.length === 0) { toast.error('请至少添加一个验收条件'); return; }
 
@@ -401,6 +428,7 @@ function CreateCampaignView({
         retention_days: parseInt(form.retention_days, 10),
         keywords: form.keywords?.trim() ?? '',
         compliance_notes: form.compliance_notes?.trim() ?? '',
+        product_image_url: form.product_image_url?.trim() || null,
         status: 'active',
         applicant_count: 0,
       };
@@ -430,6 +458,78 @@ function CreateCampaignView({
               <div>
                 <Label className="text-gray-300">合作描述</Label>
                 <Textarea className="mt-1 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500" rows={3} placeholder="详细描述合作需求..." value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+              </div>
+              <div>
+                <Label className="text-gray-300">产品图片 *</Label>
+                <div className="mt-1 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      id="product-image-upload"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 5 * 1024 * 1024) {
+                          toast.error('图片大小不能超过 5MB');
+                          return;
+                        }
+                        const token = getToken();
+                        if (!token) {
+                          toast.error('请先登录');
+                          return;
+                        }
+                        setUploading(true);
+                        try {
+                          const url = await uploadProductImage(file, token);
+                          setForm((f) => ({ ...f, product_image_url: url }));
+                          toast.success('图片上传成功');
+                        } catch (err) {
+                          console.error(err);
+                          const msg = err instanceof Error ? err.message : '';
+                          const useLink = msg.includes('not configured') || msg.includes('503')
+                            ? '上传服务未配置，请直接填写下方图片链接'
+                            : '上传失败，可改为填写下方图片链接';
+                          toast.error(useLink);
+                        } finally {
+                          setUploading(false);
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                    <Label
+                      htmlFor="product-image-upload"
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-700 bg-gray-800 text-gray-300 cursor-pointer hover:bg-gray-750 transition-colors"
+                    >
+                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      <span>{uploading ? '上传中...' : '上传产品图片'}</span>
+                    </Label>
+                    {form.product_image_url && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-500 hover:text-red-400"
+                        onClick={() => setForm((f) => ({ ...f, product_image_url: '' }))}
+                      >
+                        清除
+                      </Button>
+                    )}
+                  </div>
+                  {form.product_image_url && (
+                    <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-gray-700 bg-gray-800">
+                      <img src={form.product_image_url} alt="产品图" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500">或填写图片链接：</p>
+                  <Input
+                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
+                    placeholder="https://..."
+                    value={form.product_image_url}
+                    onChange={e => setForm({ ...form, product_image_url: e.target.value })}
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -633,21 +733,35 @@ function OrdersView({
             ) : campaigns.map(c => (
               <Card key={c.id} className="bg-gray-900 border-gray-800 hover:border-gray-700 transition-all cursor-pointer" onClick={() => onSelectCampaign(c)}>
                 <CardContent className="p-5">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-white">{c.title}</h3>
-                        <Badge className={c.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/10 border-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/5 border-white/10'}>
-                          {c.status === 'active' ? '进行中' : c.status}
-                        </Badge>
+                  <div className="flex items-start gap-4">
+                    {c.product_image_url && (
+                      <img
+                        src={c.product_image_url}
+                        alt={c.title}
+                        className="w-20 h-20 rounded-lg object-cover flex-shrink-0 border border-gray-800"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0 flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-white">{c.title}</h3>
+                          <Badge className={c.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/10 border-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/5 border-white/10'}>
+                            {c.status === 'active' ? '进行中' : c.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-400 line-clamp-1">{c.description}</p>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                          <span>{COUNTRIES.find(co => co.code === c.country)?.flag} {c.country}</span>
+                          <span>{c.platform}</span>
+                          <span>{c.category}</span>
+                          <span>{c.applicant_count}人申请</span>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-400 line-clamp-1">{c.description}</p>
-                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                        <span>{COUNTRIES.find(co => co.code === c.country)?.flag} {c.country}</span>
-                        <span>{c.platform}</span>
-                        <span>{c.category}</span>
-                        <span>¥{c.total_budget?.toLocaleString()}</span>
-                        <span>{c.applicant_count}人申请</span>
+                      <div className="flex flex-col items-end gap-1 text-sm text-gray-300">
+                        <div className="text-base font-semibold text-emerald-400">¥{c.per_creator_min} - ¥{c.per_creator_max}</div>
+                        <div className="text-xs text-gray-500 flex flex-col items-end">
+                          <span>总预算：<span className="text-gray-300">¥{c.total_budget?.toLocaleString()}</span></span>
+                        </div>
                       </div>
                     </div>
                     <ChevronRight className="w-5 h-5 text-gray-600 flex-shrink-0 mt-1" />
@@ -666,6 +780,13 @@ function OrdersView({
                     <DialogTitle className="text-white">{selectedCampaign.title}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4 mt-4">
+                    {selectedCampaign.product_image_url && (
+                      <img
+                        src={selectedCampaign.product_image_url}
+                        alt={selectedCampaign.title}
+                        className="w-full max-h-64 object-cover rounded-xl border border-gray-800"
+                      />
+                    )}
                     <p className="text-sm text-gray-400">{selectedCampaign.description}</p>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div><span className="text-gray-500">国家：</span><span className="text-gray-300">{selectedCampaign.country}</span></div>
